@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Gaza Media Fact-Check Multi-Agent System 🔍
 
 A sophisticated fact-checking system that analyzes Gaza media coverage across Western and Arabic sources to detect contradictions using AI.
@@ -718,4 +717,3 @@ Please include:
 ---
 
 *Built with ❤️ for media transparency and fact-checking* 
->>>>>>> 0f0962abf813e95028180e06f06376ad303dd183
