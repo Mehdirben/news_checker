@@ -83,7 +83,6 @@ A sophisticated multi-agent system designed to analyze and fact-check media cove
      TWITTER_API_SECRET = "your_api_secret"
      TWITTER_ACCESS_TOKEN = "your_access_token"
      TWITTER_ACCESS_TOKEN_SECRET = "your_access_token_secret"
-     TWITTER_BEARER_TOKEN = "your_bearer_token"
      ```
 
 4. **Start the system**:
