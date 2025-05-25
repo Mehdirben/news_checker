@@ -944,62 +944,453 @@ def create_media_factcheck_agent():
 
 @app.route('/')
 def index():
-    """Serve the main dashboard page"""
+    """Serve the enhanced dashboard page"""
     return render_template_string("""
     <!DOCTYPE html>
-    <html>
+    <html lang="en">
     <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Gaza Media Fact-Check Dashboard</title>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <style>
-            body { font-family: Arial, sans-serif; margin: 40px; background: #f5f5f5; }
-            .container { max-width: 1200px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-            h1 { color: #2c3e50; text-align: center; margin-bottom: 30px; }
-            .form-group { margin-bottom: 20px; }
-            label { display: block; margin-bottom: 5px; font-weight: bold; color: #34495e; }
-            input[type="text"] { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 5px; font-size: 16px; }
-            button { background: #3498db; color: white; padding: 12px 30px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
-            button:hover { background: #2980b9; }
-            .results { margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 5px; }
-            .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
-            .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
-            .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
-            .loading { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+                padding: 20px;
+                line-height: 1.6;
+            }
+            
+            .dashboard {
+                max-width: 1400px;
+                margin: 0 auto;
+                display: grid;
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .header {
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(10px);
+                border-radius: 20px;
+                padding: 30px;
+                text-align: center;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+            }
+            
+            .header h1 {
+                color: #2c3e50;
+                font-size: 2.5rem;
+                font-weight: 700;
+                margin-bottom: 10px;
+                background: linear-gradient(45deg, #667eea, #764ba2);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+            }
+            
+            .header p {
+                color: #6c757d;
+                font-size: 1.1rem;
+                margin-bottom: 20px;
+            }
+            
+            .status-indicator {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                background: #d4edda;
+                color: #155724;
+                padding: 8px 16px;
+                border-radius: 25px;
+                font-size: 0.9rem;
+                font-weight: 500;
+            }
+            
+            .analysis-panel {
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(10px);
+                border-radius: 20px;
+                padding: 30px;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+            }
+            
+            .input-section {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 20px;
+                margin-bottom: 30px;
+            }
+            
+            .form-group {
+                position: relative;
+            }
+            
+            .form-group label {
+                display: block;
+                margin-bottom: 8px;
+                font-weight: 600;
+                color: #2c3e50;
+                font-size: 1rem;
+            }
+            
+            .form-group input {
+                width: 100%;
+                padding: 15px 20px;
+                border: 2px solid #e9ecef;
+                border-radius: 12px;
+                font-size: 1rem;
+                transition: all 0.3s ease;
+                background: rgba(255, 255, 255, 0.8);
+            }
+            
+            .form-group input:focus {
+                outline: none;
+                border-color: #667eea;
+                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+                background: white;
+            }
+            
+            .analyze-btn {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border: none;
+                padding: 15px 40px;
+                border-radius: 12px;
+                font-size: 1.1rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 10px;
+                min-height: 55px;
+                position: relative;
+                overflow: hidden;
+            }
+            
+            .analyze-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+            }
+            
+            .analyze-btn:active {
+                transform: translateY(0);
+            }
+            
+            .analyze-btn:disabled {
+                opacity: 0.7;
+                cursor: not-allowed;
+                transform: none;
+            }
+            
+            .loading-spinner {
+                display: none;
+                width: 20px;
+                height: 20px;
+                border: 2px solid rgba(255, 255, 255, 0.3);
+                border-top: 2px solid white;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+            }
+            
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+            
+            .results-container {
+                display: none;
+                margin-top: 30px;
+            }
+            
+            .status-message {
+                padding: 15px 20px;
+                border-radius: 12px;
+                margin-bottom: 20px;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                font-weight: 500;
+            }
+            
+            .status-success {
+                background: #d4edda;
+                color: #155724;
+                border: 1px solid #c3e6cb;
+            }
+            
+            .status-error {
+                background: #f8d7da;
+                color: #721c24;
+                border: 1px solid #f5c6cb;
+            }
+            
+            .status-loading {
+                background: #cce5f0;
+                color: #0c5460;
+                border: 1px solid #bee5eb;
+            }
+            
+            .metrics-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 15px;
+                margin-bottom: 30px;
+            }
+            
+            .metric-card {
+                background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+                padding: 20px;
+                border-radius: 15px;
+                text-align: center;
+                border: 1px solid rgba(0, 0, 0, 0.05);
+                transition: transform 0.3s ease;
+            }
+            
+            .metric-card:hover {
+                transform: translateY(-3px);
+            }
+            
+            .metric-value {
+                font-size: 2rem;
+                font-weight: 700;
+                color: #2c3e50;
+                margin-bottom: 5px;
+            }
+            
+            .metric-label {
+                color: #6c757d;
+                font-size: 0.9rem;
+                font-weight: 500;
+            }
+            
+            .chart-container {
+                background: white;
+                border-radius: 15px;
+                padding: 20px;
+                margin-bottom: 20px;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            }
+            
+            .contradictions-section {
+                margin-top: 30px;
+            }
+            
+            .contradiction-card {
+                background: white;
+                border-radius: 15px;
+                padding: 25px;
+                margin-bottom: 20px;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+                border-left: 4px solid #e74c3c;
+                transition: all 0.3s ease;
+            }
+            
+            .contradiction-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            }
+            
+            .contradiction-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 20px;
+            }
+            
+            .contradiction-title {
+                font-size: 1.2rem;
+                font-weight: 600;
+                color: #2c3e50;
+            }
+            
+            .severity-badge {
+                padding: 5px 12px;
+                border-radius: 20px;
+                font-size: 0.8rem;
+                font-weight: 600;
+                text-transform: uppercase;
+            }
+            
+            .severity-high { background: #fee; color: #dc3545; }
+            .severity-medium { background: #fff3cd; color: #856404; }
+            .severity-low { background: #d1ecf1; color: #0c5460; }
+            
+            .source-comparison {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 20px;
+                margin-bottom: 20px;
+            }
+            
+            .source-card {
+                background: #f8f9fa;
+                padding: 15px;
+                border-radius: 12px;
+                border: 1px solid #e9ecef;
+            }
+            
+            .source-header {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                margin-bottom: 10px;
+                font-weight: 600;
+                color: #2c3e50;
+            }
+            
+            .source-title {
+                font-size: 0.95rem;
+                line-height: 1.4;
+                color: #495057;
+                margin-bottom: 8px;
+            }
+            
+            .source-url {
+                font-size: 0.8rem;
+                color: #6c757d;
+                word-break: break-all;
+            }
+            
+            .ai-contradictions {
+                background: #fff8e1;
+                border-radius: 10px;
+                padding: 15px;
+                border: 1px solid #ffe082;
+            }
+            
+            .ai-contradiction-item {
+                background: white;
+                padding: 12px;
+                border-radius: 8px;
+                margin-bottom: 10px;
+                border-left: 3px solid #ff9800;
+            }
+            
+            .claim-comparison {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 15px;
+                margin: 10px 0;
+            }
+            
+            .claim-box {
+                background: #f1f3f4;
+                padding: 10px;
+                border-radius: 8px;
+                font-size: 0.9rem;
+                line-height: 1.4;
+            }
+            
+            .western-claim { border-left: 3px solid #3498db; }
+            .arabic-claim { border-left: 3px solid #27ae60; }
+            
+            .no-results {
+                text-align: center;
+                padding: 40px;
+                color: #6c757d;
+                background: #f8f9fa;
+                border-radius: 15px;
+                margin-top: 20px;
+            }
+            
+            @media (max-width: 768px) {
+                .input-section {
+                    grid-template-columns: 1fr;
+                }
+                
+                .source-comparison {
+                    grid-template-columns: 1fr;
+                }
+                
+                .claim-comparison {
+                    grid-template-columns: 1fr;
+                }
+                
+                .metrics-grid {
+                    grid-template-columns: repeat(2, 1fr);
+                }
+                
+                .header h1 {
+                    font-size: 2rem;
+                }
+            }
         </style>
     </head>
     <body>
-        <div class="container">
-            <h1>🔍 Gaza Media Fact-Check Analysis</h1>
-            
-            <div class="form-group">
-                <label for="western_query">Western Media Query:</label>
-                <input type="text" id="western_query" value="Gaza hospital strike" placeholder="Enter search terms for Western media">
+        <div class="dashboard">
+            <div class="header">
+                <h1><i class="fas fa-search"></i> Gaza Media Fact-Check Dashboard</h1>
+                <p>AI-powered analysis of media coverage contradictions between Western and Arabic sources</p>
+                <div class="status-indicator">
+                    <i class="fas fa-check-circle"></i>
+                    System Online & Ready
+                </div>
             </div>
             
-            <div class="form-group">
-                <label for="arabic_query">Arabic Media Query:</label>
-                <input type="text" id="arabic_query" value="قصف مستشفى غزة" placeholder="Enter search terms for Arabic media">
-            </div>
-            
-            <button onclick="analyzeMedia()">🚀 Analyze Media Coverage</button>
-            
-            <div id="results" class="results" style="display: none;">
-                <h3>Analysis Results</h3>
-                <div id="status"></div>
-                <div id="output"></div>
+            <div class="analysis-panel">
+                <div class="input-section">
+                    <div class="form-group">
+                        <label for="western_query">
+                            <i class="fas fa-globe-americas"></i> Western Media Query
+                        </label>
+                        <input type="text" id="western_query" value="Gaza hospital strike" 
+                               placeholder="e.g., Gaza hospital strike, Israel operation">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="arabic_query">
+                            <i class="fas fa-globe-africa"></i> Arabic Media Query
+                        </label>
+                        <input type="text" id="arabic_query" value="قصف مستشفى غزة" 
+                               placeholder="e.g., قصف مستشفى غزة، عملية إسرائيلية">
+                    </div>
+                </div>
+                
+                <button class="analyze-btn" onclick="analyzeMedia()" id="analyzeBtn">
+                    <i class="fas fa-rocket" id="analyzeIcon"></i>
+                    <span class="loading-spinner" id="loadingSpinner"></span>
+                    <span id="btnText">Analyze Media Coverage</span>
+                </button>
+                
+                <div class="results-container" id="resultsContainer">
+                    <div id="statusMessage"></div>
+                    <div id="metricsSection"></div>
+                    <div id="chartSection"></div>
+                    <div id="contradictionsSection"></div>
+                </div>
             </div>
         </div>
 
         <script>
+            let analysisData = null;
+
             function analyzeMedia() {
-                const westernQuery = document.getElementById('western_query').value;
-                const arabicQuery = document.getElementById('arabic_query').value;
-                const resultsDiv = document.getElementById('results');
-                const statusDiv = document.getElementById('status');
-                const outputDiv = document.getElementById('output');
+                const westernQuery = document.getElementById('western_query').value.trim();
+                const arabicQuery = document.getElementById('arabic_query').value.trim();
                 
-                resultsDiv.style.display = 'block';
-                statusDiv.innerHTML = '<div class="status loading">🔄 Starting analysis... This may take 2-3 minutes.</div>';
-                outputDiv.innerHTML = '';
+                if (!westernQuery || !arabicQuery) {
+                    showStatus('error', 'Please enter both Western and Arabic search queries');
+                    return;
+                }
+                
+                setLoadingState(true);
+                showResults();
+                showStatus('loading', 'Starting analysis... This may take 2-3 minutes. Please be patient.');
+                
+                clearResults();
                 
                 fetch('/api/analyze', {
                     method: 'POST',
@@ -1011,79 +1402,271 @@ def index():
                         arabic_query: arabicQuery
                     })
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
+                    setLoadingState(false);
                     if (data.status === 'success') {
-                        statusDiv.innerHTML = '<div class="status success">✅ Analysis completed successfully!</div>';
+                        analysisData = data;
+                        showStatus('success', 'Analysis completed successfully!');
+                        displayMetrics(data.summary);
+                        displayChart(data.summary);
+                        displayContradictions(data.contradictions || []);
                         
-                        let output = `
-                            <h4>📊 Summary</h4>
-                            <p><strong>Western sources analyzed:</strong> ${data.summary.western_sources_analyzed}</p>
-                            <p><strong>Arabic sources analyzed:</strong> ${data.summary.arabic_sources_analyzed}</p>
-                            <p><strong>Matched article pairs:</strong> ${data.summary.matched_pairs_found}</p>
-                            <p><strong>Contradictions found:</strong> ${data.summary.contradictions_found || 0}</p>
-                            <p><strong>Total specific contradictions:</strong> ${data.summary.total_specific_contradictions || 0}</p>
-                            
-                            <h4>🔍 Fact-Check Analysis</h4>
-                        `;
-                        
-                        if (data.fact_checks && data.fact_checks.length > 0) {
-                            const factCheck = data.fact_checks[0];
-                            output += `
-                                <p><strong>Analysis Type:</strong> ${factCheck.topic}</p>
-                                <p><strong>Details:</strong> ${factCheck.analysis}</p>
-                                <p><strong>Findings:</strong> ${factCheck.details}</p>
-                            `;
-                            
-                            if (factCheck.western_terms && factCheck.western_terms.length > 0) {
-                                output += `<p><strong>Western Terms:</strong> ${factCheck.western_terms.slice(0, 5).join(', ')}</p>`;
-                            }
-                            
-                            if (factCheck.arabic_terms && factCheck.arabic_terms.length > 0) {
-                                output += `<p><strong>Arabic Terms:</strong> ${factCheck.arabic_terms.slice(0, 5).join(', ')}</p>`;
-                            }
-                        }
-                        
-                        if (data.contradictions && data.contradictions.length > 0) {
-                            output += '<h4>🚨 Specific Contradictions</h4>';
-                            data.contradictions.forEach((contradiction, index) => {
-                                output += `
-                                    <div style="border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px;">
-                                        <h5>Contradiction ${index + 1}</h5>
-                                        <p><strong>Western Source:</strong> ${contradiction.western_article.source} - ${contradiction.western_article.title.substring(0, 100)}...</p>
-                                        <p><strong>Arabic Source:</strong> ${contradiction.arabic_article.source} - ${contradiction.arabic_article.title.substring(0, 100)}...</p>
-                                        
-                                        ${contradiction.ai_contradictions_found && contradiction.ai_contradictions_found.length > 0 ? `
-                                            <h6>AI-Detected Contradictions:</h6>
-                                            ${contradiction.ai_contradictions_found.map(c => `
-                                                <div style="background: #f8f9fa; padding: 10px; margin: 5px 0; border-radius: 3px;">
-                                                    <p><strong>Type:</strong> ${c.type || 'factual'}</p>
-                                                    <p><strong>Western Claim:</strong> "${c.western_claim || 'N/A'}"</p>
-                                                    <p><strong>Arabic Claim:</strong> "${c.arabic_claim || 'N/A'}"</p>
-                                                    <p><strong>Significance:</strong> ${c.significance || 'Analysis pending'}</p>
-                                                </div>
-                                            `).join('')}
-                                        ` : '<p><em>No specific contradictions detected in this pair.</em></p>'}
-                                    </div>
-                                `;
-                            });
-                        }
-                        
-                        outputDiv.innerHTML = output;
-                        
-                        // Check if Twitter agent was notified
                         if (data.summary.total_specific_contradictions > 0) {
-                            statusDiv.innerHTML += '<div class="status success">🐦 Twitter agent has been notified about contradictions!</div>';
+                            showStatus('success', '🐦 Twitter agent has been notified about contradictions!', true);
                         }
-                        
                     } else {
-                        statusDiv.innerHTML = '<div class="status error">❌ Analysis failed: ' + (data.message || 'Unknown error') + '</div>';
+                        showStatus('error', `Analysis failed: ${data.message || 'Unknown error'}`);
                     }
                 })
                 .catch(error => {
-                    statusDiv.innerHTML = '<div class="status error">❌ Request failed: ' + error.message + '</div>';
+                    setLoadingState(false);
+                    showStatus('error', `Request failed: ${error.message}`);
+                    console.error('Analysis error:', error);
                 });
             }
+            
+            function setLoadingState(loading) {
+                const btn = document.getElementById('analyzeBtn');
+                const icon = document.getElementById('analyzeIcon');
+                const spinner = document.getElementById('loadingSpinner');
+                const text = document.getElementById('btnText');
+                
+                btn.disabled = loading;
+                
+                if (loading) {
+                    icon.style.display = 'none';
+                    spinner.style.display = 'block';
+                    text.textContent = 'Analyzing...';
+                } else {
+                    icon.style.display = 'block';
+                    spinner.style.display = 'none';
+                    text.textContent = 'Analyze Media Coverage';
+                }
+            }
+            
+            function showResults() {
+                document.getElementById('resultsContainer').style.display = 'block';
+            }
+            
+            function clearResults() {
+                document.getElementById('metricsSection').innerHTML = '';
+                document.getElementById('chartSection').innerHTML = '';
+                document.getElementById('contradictionsSection').innerHTML = '';
+            }
+            
+            function showStatus(type, message, append = false) {
+                const statusDiv = document.getElementById('statusMessage');
+                const iconMap = {
+                    'success': 'fas fa-check-circle',
+                    'error': 'fas fa-exclamation-triangle',
+                    'loading': 'fas fa-spinner fa-spin'
+                };
+                
+                const statusHtml = `
+                    <div class="status-message status-${type}">
+                        <i class="${iconMap[type]}"></i>
+                        ${message}
+                    </div>
+                `;
+                
+                if (append) {
+                    statusDiv.innerHTML += statusHtml;
+                } else {
+                    statusDiv.innerHTML = statusHtml;
+                }
+            }
+            
+            function displayMetrics(summary) {
+                const metricsHtml = `
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-value">${summary.western_sources_analyzed}</div>
+                            <div class="metric-label">Western Sources</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value">${summary.arabic_sources_analyzed}</div>
+                            <div class="metric-label">Arabic Sources</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value">${summary.matched_pairs_found}</div>
+                            <div class="metric-label">Matched Pairs</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value">${summary.total_specific_contradictions || 0}</div>
+                            <div class="metric-label">Contradictions Found</div>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('metricsSection').innerHTML = metricsHtml;
+            }
+            
+            function displayChart(summary) {
+                const chartHtml = `
+                    <div class="chart-container">
+                        <canvas id="analysisChart" width="400" height="200"></canvas>
+                    </div>
+                `;
+                document.getElementById('chartSection').innerHTML = chartHtml;
+                
+                // Create chart
+                const ctx = document.getElementById('analysisChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Western Sources', 'Arabic Sources', 'Matched Pairs', 'Contradictions'],
+                        datasets: [{
+                            data: [
+                                summary.western_sources_analyzed,
+                                summary.arabic_sources_analyzed,
+                                summary.matched_pairs_found,
+                                summary.total_specific_contradictions || 0
+                            ],
+                            backgroundColor: [
+                                '#3498db',
+                                '#27ae60',
+                                '#f39c12',
+                                '#e74c3c'
+                            ],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Analysis Overview',
+                                font: {
+                                    size: 16,
+                                    weight: 'bold'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+            
+            function displayContradictions(contradictions) {
+                if (!contradictions || contradictions.length === 0) {
+                    document.getElementById('contradictionsSection').innerHTML = `
+                        <div class="no-results">
+                            <i class="fas fa-info-circle" style="font-size: 2rem; margin-bottom: 10px; opacity: 0.5;"></i>
+                            <h3>No Contradictions Found</h3>
+                            <p>The analysis did not detect any significant contradictions between the matched articles.</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                let contradictionsHtml = '<div class="contradictions-section"><h3><i class="fas fa-exclamation-triangle"></i> Detected Contradictions</h3>';
+                
+                contradictions.forEach((contradiction, index) => {
+                    const severity = getSeverity(contradiction);
+                    contradictionsHtml += `
+                        <div class="contradiction-card">
+                            <div class="contradiction-header">
+                                <div class="contradiction-title">Contradiction #${index + 1}</div>
+                                <div class="severity-badge severity-${severity}">${severity}</div>
+                            </div>
+                            
+                            <div class="source-comparison">
+                                <div class="source-card">
+                                    <div class="source-header">
+                                        <i class="fas fa-globe-americas"></i>
+                                        Western Source
+                                    </div>
+                                    <div class="source-title">${contradiction.western_article.source}</div>
+                                    <div class="source-title">${truncateText(contradiction.western_article.title, 120)}</div>
+                                    <div class="source-url">${truncateText(contradiction.western_article.url, 60)}</div>
+                                </div>
+                                
+                                <div class="source-card">
+                                    <div class="source-header">
+                                        <i class="fas fa-globe-africa"></i>
+                                        Arabic Source
+                                    </div>
+                                    <div class="source-title">${contradiction.arabic_article.source}</div>
+                                    <div class="source-title">${truncateText(contradiction.arabic_article.title, 120)}</div>
+                                    <div class="source-url">${truncateText(contradiction.arabic_article.url, 60)}</div>
+                                </div>
+                            </div>
+                            
+                            ${displayAIContradictions(contradiction.ai_contradictions_found || [])}
+                        </div>
+                    `;
+                });
+                
+                contradictionsHtml += '</div>';
+                document.getElementById('contradictionsSection').innerHTML = contradictionsHtml;
+            }
+            
+            function displayAIContradictions(aiContradictions) {
+                if (!aiContradictions || aiContradictions.length === 0) {
+                    return '<div style="text-align: center; color: #6c757d; padding: 15px;">No specific contradictions detected by AI analysis.</div>';
+                }
+                
+                let html = '<div class="ai-contradictions"><h4><i class="fas fa-robot"></i> AI-Detected Contradictions</h4>';
+                
+                aiContradictions.forEach((contradiction, index) => {
+                    html += `
+                        <div class="ai-contradiction-item">
+                            <div style="font-weight: 600; margin-bottom: 8px;">
+                                ${contradiction.type || 'Factual'} Contradiction
+                            </div>
+                            <div class="claim-comparison">
+                                <div class="claim-box western-claim">
+                                    <strong>Western Claim:</strong><br>
+                                    "${contradiction.western_claim?.exact_quote || contradiction.western_claim || 'N/A'}"
+                                </div>
+                                <div class="claim-box arabic-claim">
+                                    <strong>Arabic Claim:</strong><br>
+                                    "${contradiction.arabic_claim?.english_translation || contradiction.arabic_claim || 'N/A'}"
+                                </div>
+                            </div>
+                            <div style="margin-top: 8px; font-size: 0.9rem; color: #6c757d;">
+                                <strong>Analysis:</strong> ${contradiction.discrepancy_explanation || contradiction.significance || 'Contradiction detected by AI analysis'}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+                return html;
+            }
+            
+            function getSeverity(contradiction) {
+                if (contradiction.ai_contradictions_found && contradiction.ai_contradictions_found.length > 2) {
+                    return 'high';
+                } else if (contradiction.ai_contradictions_found && contradiction.ai_contradictions_found.length > 0) {
+                    return 'medium';
+                }
+                return 'low';
+            }
+            
+            function truncateText(text, maxLength) {
+                if (!text) return 'N/A';
+                return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+            }
+
+            // Allow Enter key to trigger analysis
+            document.addEventListener('DOMContentLoaded', function() {
+                document.getElementById('western_query').addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') analyzeMedia();
+                });
+                document.getElementById('arabic_query').addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') analyzeMedia();
+                });
+            });
         </script>
     </body>
     </html>
@@ -1151,7 +1734,21 @@ def analyze_coverage():
                 print(f"📡 {total_contradictions} contradictions found - notifying Twitter agent...")
                 try:
                     import asyncio
-                    asyncio.create_task(notify_twitter_agent(ai_analysis_data))
+                    import threading
+                    
+                    def run_async_notify():
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                        try:
+                            loop.run_until_complete(notify_twitter_agent(ai_analysis_data))
+                        finally:
+                            loop.close()
+                    
+                    # Run in background thread to avoid blocking
+                    thread = threading.Thread(target=run_async_notify)
+                    thread.daemon = True
+                    thread.start()
+                    
                 except Exception as e:
                     print(f"⚠️ Could not notify Twitter agent: {e}")
             
@@ -1327,6 +1924,197 @@ def health_check():
         'a2a_enabled': True,
         'connected_agents': ['twitter_agent']
     })
+
+
+@app.route('/api/docs')
+def api_docs():
+    """Serve API documentation page"""
+    return render_template_string("""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>API Documentation - Gaza Media Fact-Check</title>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+                padding: 20px;
+                line-height: 1.6;
+                margin: 0;
+            }
+            .container {
+                max-width: 1000px;
+                margin: 0 auto;
+                background: rgba(255, 255, 255, 0.95);
+                backdrop-filter: blur(10px);
+                border-radius: 20px;
+                padding: 30px;
+                box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            }
+            h1 { color: #2c3e50; text-align: center; margin-bottom: 30px; }
+            h2 { color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+            .endpoint { background: #f8f9fa; padding: 20px; border-radius: 10px; margin: 15px 0; }
+            .method { font-weight: bold; color: #27ae60; }
+            .url { font-family: monospace; background: #e9ecef; padding: 5px 10px; border-radius: 5px; }
+            .back-btn { 
+                display: inline-block; 
+                background: #3498db; 
+                color: white; 
+                padding: 10px 20px; 
+                text-decoration: none; 
+                border-radius: 5px; 
+                margin-bottom: 20px; 
+            }
+            .status-indicator {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                background: #d4edda;
+                color: #155724;
+                padding: 8px 16px;
+                border-radius: 25px;
+                font-size: 0.9rem;
+                font-weight: 500;
+                margin-bottom: 20px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <a href="/" class="back-btn"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+            
+            <h1><i class="fas fa-book"></i> API Documentation</h1>
+            
+            <div class="status-indicator">
+                <i class="fas fa-check-circle"></i>
+                System Online & Ready
+            </div>
+            
+            <h2>Available Endpoints</h2>
+            
+            <div class="endpoint">
+                <h3><span class="method">GET</span> <span class="url">/</span></h3>
+                <p>Main dashboard interface for analyzing Gaza media coverage</p>
+            </div>
+            
+            <div class="endpoint">
+                <h3><span class="method">POST</span> <span class="url">/api/analyze</span></h3>
+                <p>Analyze media coverage contradictions between Western and Arabic sources</p>
+                <strong>Request Body:</strong>
+                <pre>{
+  "western_query": "Gaza hospital strike",
+  "arabic_query": "قصف مستشفى غزة"
+}</pre>
+                <strong>Response:</strong> Analysis results with contradictions, matched pairs, and AI insights
+            </div>
+            
+            <div class="endpoint">
+                <h3><span class="method">GET</span> <span class="url">/api/health</span></h3>
+                <p>System health check endpoint</p>
+                <strong>Response:</strong> System status and configuration information
+            </div>
+            
+            <div class="endpoint">
+                <h3><span class="method">GET</span> <span class="url">/a2a/status</span></h3>
+                <p>Agent-to-Agent communication status</p>
+                <strong>Response:</strong> A2A protocol status and connected agents
+            </div>
+            
+            <div class="endpoint">
+                <h3><span class="method">POST</span> <span class="url">/a2a/trigger_analysis</span></h3>
+                <p>Manually trigger analysis via A2A protocol</p>
+                <strong>Request Body:</strong>
+                <pre>{
+  "western_query": "Gaza news",
+  "arabic_query": "أخبار غزة"
+}</pre>
+            </div>
+            
+            <h2>System Features</h2>
+            <ul>
+                <li><i class="fas fa-robot"></i> AI-powered contradiction detection using Google Gemini</li>
+                <li><i class="fas fa-globe"></i> Multi-source media analysis (Western and Arabic)</li>
+                <li><i class="fas fa-chart-bar"></i> Real-time data visualization with charts</li>
+                <li><i class="fas fa-twitter"></i> Automated Twitter notification system</li>
+                <li><i class="fas fa-comments"></i> Agent-to-Agent communication protocol</li>
+                <li><i class="fas fa-mobile-alt"></i> Responsive design for all devices</li>
+            </ul>
+            
+            <h2>Analysis Process</h2>
+            <ol>
+                <li>Search Western media sources (CNN, BBC, Reuters, AP, Guardian, etc.)</li>
+                <li>Search Arabic media sources (Al Jazeera, BBC Arabic, RT Arabic, etc.)</li>
+                <li>AI-powered article matching based on semantic similarity</li>
+                <li>Deep content analysis for contradiction detection</li>
+                <li>Generate detailed reports with exact quotes and discrepancies</li>
+                <li>Notify Twitter agent for public disclosure</li>
+            </ol>
+        </div>
+    </body>
+    </html>
+    """)
+
+
+@app.route('/api/status')
+def system_status():
+    """Detailed system status endpoint"""
+    try:
+        # Test Google AI connection
+        model = DirectGeminiModel("gemini-1.5-flash")
+        test_response = model.complete("Test")
+        google_ai_status = "operational" if test_response else "error"
+    except:
+        google_ai_status = "error"
+    
+    # Test Twitter agent connection
+    try:
+        import requests
+        response = requests.get("http://localhost:5001/a2a/status", timeout=2)
+        twitter_agent_status = "operational" if response.status_code == 200 else "error"
+        twitter_data = response.json() if response.status_code == 200 else {}
+    except:
+        twitter_agent_status = "error"
+        twitter_data = {}
+    
+    return jsonify({
+        'system_status': 'operational',
+        'timestamp': datetime.now().isoformat(),
+        'components': {
+            'fact_check_agent': {
+                'status': 'operational',
+                'port': 5000,
+                'capabilities': ['media_analysis', 'contradiction_detection', 'ai_analysis']
+            },
+            'twitter_agent': {
+                'status': twitter_agent_status,
+                'port': 5001,
+                'posting_enabled': twitter_data.get('posting_enabled', False),
+                'mode': twitter_data.get('twitter_client_status', 'unknown')
+            },
+            'google_ai': {
+                'status': google_ai_status,
+                'model': 'gemini-1.5-flash',
+                'integration': 'direct_api'
+            },
+            'a2a_protocol': {
+                'status': 'operational',
+                'message_queue_size': len(a2a_protocol.message_queue),
+                'connected_agents': ['twitter_agent']
+            }
+        },
+        'endpoints': {
+            'dashboard': 'http://localhost:5000/',
+            'api_analyze': 'http://localhost:5000/api/analyze',
+            'api_docs': 'http://localhost:5000/api/docs',
+            'health_check': 'http://localhost:5000/api/health',
+            'twitter_agent': 'http://localhost:5001/a2a/status'
+        }
+    })
+
 
 
 if __name__ == '__main__':

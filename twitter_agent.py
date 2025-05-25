@@ -8,72 +8,86 @@ from flask import Flask, request, jsonify
 import google.generativeai as genai
 import time
 
-# Twitter API Configuration - YOU MUST REPLACE WITH YOUR ACTUAL KEYS
-TWITTER_API_KEY = "66LubKev38oDzerpFaTQu9p9E"
-TWITTER_API_SECRET = "PurRxYGyjns3F4sRWCuLhj0Ib4LSNt5VwWvv7JmHYtSw4JbU4s"
-TWITTER_ACCESS_TOKEN = "1926411698446999552-xpRDbTJOEPy2xNObJXyS7pgDiPbm9C"
-TWITTER_ACCESS_TOKEN_SECRET = "QU6POpXqtA7K19HXwxsxUxYQGYOmNOXibKFvMwxGnnKF1"
+# Twitter API Configuration - DEMO/PLACEHOLDER KEYS (NEED TO BE REPLACED)
+TWITTER_API_KEY = "e7iriIjTGSfpQjnCkTIwWxhvo"
+TWITTER_API_SECRET = "lqTJ8MIgo1AOn44d01fLu1UmG06SpY0H4Xj1BayW6uj7J0Y3pE"
+TWITTER_ACCESS_TOKEN = "1926432141056901120-ED0j32if4ZFVL2PaXzZjLWLuKpc4Qy"
+TWITTER_ACCESS_TOKEN_SECRET = "P9HBdsgaIprhRWtj8sQSLRxiW4OK72CyRNiW2Qx6BsTGr"
 
-# Configure Google API
+# Configure Google API - PLACEHOLDER KEY (NEED TO BE REPLACED)
 GOOGLE_API_KEY = "YOUR_GOOGLE_API_KEY_HERE" # Make sure to replace this with your actual Google API key
-genai.configure(api_key=GOOGLE_API_KEY)
+if GOOGLE_API_KEY != "YOUR_GOOGLE_API_KEY_HERE":
+    genai.configure(api_key=GOOGLE_API_KEY)
+else:
+    print("⚠️ Google API key not configured - Twitter agent will work in simulation mode")
 
 # Configure Twitter API v2 Client
 print("🔧 Initializing Twitter client...")
-try:
-    twitter_client = tweepy.Client(
-        consumer_key=TWITTER_API_KEY,
-        consumer_secret=TWITTER_API_SECRET,
-        access_token=TWITTER_ACCESS_TOKEN,
-        access_token_secret=TWITTER_ACCESS_TOKEN_SECRET,
-        wait_on_rate_limit=True
-    )
-    
-    # Test connection and permissions
-    print("🧪 Testing Twitter API connection...")
-    try:
-        user = twitter_client.get_me()
-        print(f"✅ Connected to Twitter as: @{user.data.username}")
-        
-        # Test posting capability with a simple test
-        print("🔍 Testing posting permissions...")
-        test_response = twitter_client.create_tweet(text="🤖 Bot connection test - will delete shortly")
-        if test_response.data:
-            print("✅ Posting permissions: VERIFIED")
-            # Delete the test tweet
-            twitter_client.delete_tweet(test_response.data['id'])
-            print("🗑️ Test tweet deleted")
-        
-        print("🔥 Twitter client ready for LIVE POSTING!")
-        TWITTER_ENABLED = True
-        
-    except tweepy.Forbidden as e:
-        print(f"❌ Twitter permissions error: {e}")
-        print("🔧 REQUIRED FIXES:")
-        print("   1. Go to https://developer.twitter.com/en/portal/dashboard")
-        print("   2. Select your app → Settings → User authentication settings")
-        print("   3. Enable OAuth2.0 with Read and Write permissions")
-        print("   4. Generate new API keys after permission change")
-        print("   5. Make sure your app has 'Write' permissions enabled")
-        TWITTER_ENABLED = False
-        
-    except tweepy.Unauthorized as e:
-        print(f"❌ Twitter authentication failed: {e}")
-        print("🔧 AUTHENTICATION FIXES:")
-        print("   1. Regenerate ALL API keys in Twitter Developer Portal")
-        print("   2. Copy the new keys to this file")
-        print("   3. Make sure Bearer Token is included")
-        print("   4. Wait 15 minutes after regenerating keys")
-        TWITTER_ENABLED = False
-        
-    except Exception as e:
-        print(f"❌ Twitter connection error: {e}")
-        TWITTER_ENABLED = False
-        
-except Exception as e:
-    print(f"❌ Twitter client initialization failed: {e}")
-    print("🔄 Running in simulation mode")
+
+# Check if keys are still placeholder values
+if (TWITTER_API_KEY == "66LubKev38oDzerpFaTQu9p9E" or 
+    TWITTER_API_SECRET == "PurRxYGyjns3F4sRWCuLhj0Ib4LSNt5VwWvv7JmHYtSw4JbU4s"):
+    print("⚠️ PLACEHOLDER/DEMO TWITTER KEYS DETECTED")
+    print("🔧 TO ENABLE LIVE TWITTER POSTING:")
+    print("   1. Get your own Twitter API keys from https://developer.twitter.com")
+    print("   2. Replace the keys in twitter_agent.py")
+    print("   3. Restart the agents")
+    print("🔄 Running Twitter agent in SIMULATION MODE")
     TWITTER_ENABLED = False
+    twitter_client = None
+else:
+    try:
+        twitter_client = tweepy.Client(
+            consumer_key=TWITTER_API_KEY,
+            consumer_secret=TWITTER_API_SECRET,
+            access_token=TWITTER_ACCESS_TOKEN,
+            access_token_secret=TWITTER_ACCESS_TOKEN_SECRET,
+            wait_on_rate_limit=False  # Don't wait on rate limits to prevent hanging
+        )
+        
+        # Test connection with minimal API calls
+        print("🧪 Testing Twitter API connection...")
+        try:
+            # Use a light API call that's less likely to hit rate limits
+            user = twitter_client.get_me(user_fields=['username'])
+            print(f"✅ Connected to Twitter as: @{user.data.username}")
+            print("✅ Authentication: VERIFIED")
+            print("🔥 Twitter client ready for POSTING!")
+            TWITTER_ENABLED = True
+            
+        except tweepy.TooManyRequests as e:
+            print(f"⏳ Rate limit exceeded on connection test: {e}")
+            print("🔄 Twitter agent will work but may be rate limited")
+            TWITTER_ENABLED = True  # Still enable, but warn about rate limits
+            
+        except tweepy.Forbidden as e:
+            print(f"❌ Twitter permissions error: {e}")
+            print("🔧 REQUIRED FIXES:")
+            print("   1. Go to https://developer.twitter.com/en/portal/dashboard")
+            print("   2. Select your app → Settings → User authentication settings")
+            print("   3. Enable OAuth2.0 with Read and Write permissions")
+            print("   4. Generate new API keys after permission change")
+            print("   5. Make sure your app has 'Write' permissions enabled")
+            TWITTER_ENABLED = False
+            
+        except tweepy.Unauthorized as e:
+            print(f"❌ Twitter authentication failed: {e}")
+            print("🔧 AUTHENTICATION FIXES:")
+            print("   1. Regenerate ALL API keys in Twitter Developer Portal")
+            print("   2. Copy the new keys to this file")
+            print("   3. Make sure Bearer Token is included")
+            print("   4. Wait 15 minutes after regenerating keys")
+            TWITTER_ENABLED = False
+            
+        except Exception as e:
+            print(f"❌ Twitter connection error: {e}")
+            TWITTER_ENABLED = False
+            
+    except Exception as e:
+        print(f"❌ Twitter client initialization failed: {e}")
+        print("🔄 Running in simulation mode")
+        TWITTER_ENABLED = False
+        twitter_client = None
 
 
 class TwitterContradictionBot:
@@ -151,7 +165,7 @@ class TwitterContradictionBot:
     def post_single_tweet(self, tweet_content: str, dry_run: bool = False) -> dict:
         """Post a single tweet about the contradiction"""
         
-        if dry_run or not self.posting_enabled:
+        if dry_run or not self.posting_enabled or twitter_client is None:
             return self._simulate_single_tweet(tweet_content)
         
         # ACTUAL TWITTER POSTING
@@ -199,7 +213,7 @@ class TwitterContradictionBot:
             error_msg = str(e)
             print(f"❌ Posting error: {error_msg}")
             return {
-                'status': 'ERROR',
+                'status': 'ERROR', 
                 'error': error_msg
             }
     
